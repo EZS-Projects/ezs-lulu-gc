@@ -20,12 +20,11 @@ except ImportError:
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("card_query.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("./log/card_query.log"), logging.StreamHandler()],
 )
 
 
 def random_delay(min_seconds=1.0, max_seconds=3.0):
-
     return random.uniform(min_seconds, max_seconds)
 
 
@@ -125,8 +124,14 @@ async def init_driver(
 
 
 async def close_popup(page):
-
     try:
+        # 检查 xpath 是否存在
+        popup_button = await page.query_selector('xpath=//*[@id="countrySelectorModal"]/div/div/div[1]/button')
+        if not popup_button:
+            logging.info("未找到弹窗关闭按钮，跳过关闭弹窗步骤")
+            return
+
+        # 如果存在，尝试点击关闭按钮
         await page.click(
             'xpath=//*[@id="countrySelectorModal"]/div/div/div[1]/button', timeout=8000
         )
@@ -137,7 +142,7 @@ async def close_popup(page):
         logging.info("弹窗已隐藏")
     except Exception as e:
         logging.warning(f"未找到关闭弹窗按钮或点击失败: {e}")
-        await page.screenshot(path="close_popup_error.png")
+        await page.screenshot(path="./log/close_popup_error.png")
         logging.info("已保存截图 'close_popup_error.png' 以供调试")
 
 
@@ -167,17 +172,24 @@ async def input_card_number_and_check(page, card_number, max_retries=8):
             logging.info(f"已输入卡号: {card_number}")
 
             await page.click('//button[@value="check-balance"]')
-            logging.info("已点击查询按钮")
-            await asyncio.sleep(0.5)  # 等待查询结果加载
-
+            # logging.info("已点击查询按钮")
+            # # await asyncio.sleep(0.5)  # 等待查询结果加载
+            # logging.info("====LINE177====")
             try:
+                logging.info("====LINE179====")
                 # await asyncio.sleep(150)
+                await page.query_selector('xpath=//p[@class="balance"]').is_visible()
+                # await have_result.is_visible()
+                # logging.info("have_result")
+                # logging.info(have_result)
+                # logging.info(have_result.is_visible())
                 balance_element = await page.wait_for_selector(
-                    'xpath=//p[@class="balance"]', timeout=1500
+                    'xpath=//p[@class="balance"]', timeout=5000
                 )
 
                 if balance_element:
                     balance_text = await balance_element.inner_text()
+
                     if balance_text:
                         logging.info(f"查询结果: {balance_text}")
                     return balance_text
@@ -187,7 +199,8 @@ async def input_card_number_and_check(page, card_number, max_retries=8):
                 raise Exception("余额信息为空")
         except Exception as e:
             retry_count += 1
-            logging.error(f"查询卡号 {card_number} 时失败: {e}")
+            logging.info(f"查询卡号 {card_number} 时失败: {e}")
+
             if retry_count < max_retries:
                 sleep_time = random.uniform(0, 1)  # 随机等待时间，防止被封禁
                 logging.info(
@@ -214,7 +227,7 @@ async def click_check_another_card(page):
             logging.info("输入框已可用")
     except Exception as e:
         logging.error(f"未找到 'CHECK ANOTHER CARD' 按钮或点击失败: {e}")
-        await page.screenshot(path="click_check_another_card_error.png")
+        await page.screenshot(path="./log/click_check_another_card_error.png")
         raise e
 
 
@@ -289,13 +302,12 @@ def split_card_numbers(card_numbers, num_batches):
 
 
 async def main():
-    input_file = "data.csv"
-    output_file = "price.csv"
+    input_file = "./files/data.csv"
+    output_file = "./files/price.csv"
 
     MAX_THREADS = 1  # 先别太高
 
     try:
-
         df = pd.read_csv(input_file)
         card_numbers = df.iloc[:, 0].astype(str).tolist()
         logging.info(f"总共 {len(card_numbers)} 张卡需要查询")
@@ -314,7 +326,7 @@ async def main():
             process_card_batch(batch_id + 1, batch, progress_bar, progress_lock)
             for batch_id, batch in enumerate(batches)
         ]
-ß
+
         all_results = []
         for task in asyncio.as_completed(tasks):
             batch_res = await task
@@ -328,7 +340,6 @@ async def main():
 
     except Exception as e:
         logging.critical(f"主函数运行出错: {e}")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
