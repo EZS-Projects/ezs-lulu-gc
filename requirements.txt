@@ -1,3 +1,4 @@
 pandas==2.1.2
 tqdm==4.64.1
 playwright==1.49.1
+Flask[async]==2.3.3

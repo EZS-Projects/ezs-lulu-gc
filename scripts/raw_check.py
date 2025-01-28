@@ -11,7 +11,6 @@ from playwright.async_api import async_playwright
 
 try:
     from playwright_stealth import stealth_async
-
     USE_STEALTH = True
 except ImportError:
     USE_STEALTH = False
@@ -20,7 +19,7 @@ except ImportError:
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[logging.FileHandler("./log/card_query.log"), logging.StreamHandler()],
+    handlers=[logging.FileHandler("../log/card_query.log"), logging.StreamHandler()],
 )
 
 
@@ -142,12 +141,11 @@ async def close_popup(page):
         logging.info("弹窗已隐藏")
     except Exception as e:
         logging.warning(f"未找到关闭弹窗按钮或点击失败: {e}")
-        await page.screenshot(path="./log/close_popup_error.png")
+        await page.screenshot(path="../log/close_popup_error.png")
         logging.info("已保存截图 'close_popup_error.png' 以供调试")
 
 
-async def click_specific_option(page):
-
+async def open_check_dialogue(page):
     try:
         specific_option = await page.wait_for_selector(
             "xpath=/html/body/div[1]/div[3]/div[2]/a", timeout=10000
@@ -155,54 +153,45 @@ async def click_specific_option(page):
         if specific_option:
             await specific_option.click()
             logging.info("成功点击指定选项")
-            await page.wait_for_timeout(1000)  # 等待页面稳定
+            await page.wait_for_timeout(500)  # 等待页面稳定
     except Exception as e:
         logging.warning(f"未找到指定选项或点击失败: {e}")
-        await page.screenshot(path="click_specific_option_error.png")
-        logging.info("已保存截图 'click_specific_option_error.png' 以供调试")
+        await page.screenshot(path="open_check_dialogue_error.png")
+        logging.info("已保存截图 'open_check_dialogue_error.png' 以供调试")
 
 
 async def input_card_number_and_check(page, card_number, max_retries=8):
     retry_count = 0
-    time.sleep(2)
     while retry_count < max_retries:
         try:
-            await page.fill('//*[@id="card-number"]', "")  # 清空
+            # 清空输入框并输入卡号
+            await page.fill('//*[@id="card-number"]', "")
             await page.fill('//*[@id="card-number"]', card_number, timeout=5000)
             logging.info(f"已输入卡号: {card_number}")
 
+            # 点击查询按钮
             await page.click('//button[@value="check-balance"]')
-            # logging.info("已点击查询按钮")
-            # # await asyncio.sleep(0.5)  # 等待查询结果加载
-            # logging.info("====LINE177====")
-            try:
-                logging.info("====LINE179====")
-                # await asyncio.sleep(150)
-                await page.query_selector('xpath=//p[@class="balance"]').is_visible()
-                # await have_result.is_visible()
-                # logging.info("have_result")
-                # logging.info(have_result)
-                # logging.info(have_result.is_visible())
-                balance_element = await page.wait_for_selector(
-                    'xpath=//p[@class="balance"]', timeout=5000
-                )
+            logging.info("已点击查询按钮，等待余额信息")
 
-                if balance_element:
-                    balance_text = await balance_element.inner_text()
+            # 验证余额信息元素是否存在并可见
+            selector = await page.query_selector('xpath=//p[@class="balance"]')
+            await selector.is_visible()
 
-                    if balance_text:
-                        logging.info(f"查询结果: {balance_text}")
-                    return balance_text
+            # 等待余额信息加载完成
+            balance_element = await page.wait_for_selector(
+                'xpath=//p[@class="balance"]', timeout=5000
+            )
 
-            except Exception as e:
-                logging.debug("余额信息为空，继续尝试...")
-                raise Exception("余额信息为空")
+            # 获取余额文本并返回
+            if balance_element:
+                balance_text = await balance_element.inner_text()
+                logging.info(f"查询结果: {balance_text}")
+                return balance_text
         except Exception as e:
             retry_count += 1
-            logging.info(f"查询卡号 {card_number} 时失败: {e}")
-
+            logging.warning(f"查询卡号 {card_number} 时失败: {e}")
             if retry_count < max_retries:
-                sleep_time = random.uniform(0, 1)  # 随机等待时间，防止被封禁
+                sleep_time = random.uniform(0.5, 1.0)
                 logging.info(
                     f"等待 {sleep_time:.2f} 秒后重试 (重试次数: {retry_count}/{max_retries})"
                 )
@@ -213,7 +202,6 @@ async def input_card_number_and_check(page, card_number, max_retries=8):
 
 
 async def click_check_another_card(page):
-
     try:
         continue_button = await page.wait_for_selector(
             '//button[contains(text(), "CHECK ANOTHER CARD")]', timeout=8000
@@ -227,7 +215,7 @@ async def click_check_another_card(page):
             logging.info("输入框已可用")
     except Exception as e:
         logging.error(f"未找到 'CHECK ANOTHER CARD' 按钮或点击失败: {e}")
-        await page.screenshot(path="./log/click_check_another_card_error.png")
+        await page.screenshot(path="../log/click_check_another_card_error.png")
         raise e
 
 
@@ -247,7 +235,7 @@ async def process_card_batch(batch_id, card_numbers, progress_bar, progress_lock
 
         await close_popup(page)
 
-        await click_specific_option(page)
+        await open_check_dialogue(page)
 
         for idx, card_number in enumerate(card_numbers, start=1):
             logging.info(
@@ -260,13 +248,10 @@ async def process_card_batch(batch_id, card_numbers, progress_bar, progress_lock
             # 若成功获得余额，则点击“CHECK ANOTHER CARD”
             if balance != "Error":
                 try:
-                    await click_check_another_card(page)
-
-                    sleep_time = random_delay(3, 7)
                     logging.info(
-                        f"线程 {batch_id} 等待 {sleep_time:.2f} 秒后继续下一张"
-                    )
-                    await asyncio.sleep(sleep_time)
+                         f"线程 {batch_id} 等待 0 秒后继续下一张查询"
+                     )
+                    await click_check_another_card(page)
                 except Exception as e:
                     logging.error(f"线程 {batch_id} 无法返回查询页面: {e}")
             else:
@@ -293,7 +278,6 @@ async def process_card_batch(batch_id, card_numbers, progress_bar, progress_lock
 
 
 def split_card_numbers(card_numbers, num_batches):
-
     k, m = divmod(len(card_numbers), num_batches)
     return [
         card_numbers[i * k + min(i, m) : (i + 1) * k + min(i + 1, m)]
@@ -302,8 +286,8 @@ def split_card_numbers(card_numbers, num_batches):
 
 
 async def main():
-    input_file = "./files/data.csv"
-    output_file = "./files/price.csv"
+    input_file = "../files/data.csv"
+    output_file = "../files/price.csv"
 
     MAX_THREADS = 1  # 先别太高
 
