@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import asyncio
 from playwright_helpers import init_driver, close_popup, human_like_actions
+import pandas as pd
 
 app = Flask(__name__)
 
@@ -17,10 +18,24 @@ async def check_gift_card_values():
     for item in data:
         if not all(key in item for key in ["card_type", "card_number", "card_issue_country", "calling_time"]):
             return jsonify({"error": "Each object must contain 'card_type', 'card_number', 'card_issue_country', and 'calling_time' fields."}), 400
-    print("=========")
-    print(data)
+    
+    # 打印看一下原始数据
+    # print("====data=====")
+    # print(data)
+    
+    df = pd.DataFrame(data)
 
-    await asyncio.sleep(100)  # Add a delay after printing data
+    lulu_cards = df[df['card_type'] == 'Lululemon-GC']
+    print("====luluCards====")
+    print(lulu_cards)
+        
+    lulu_gc_numbers = lulu_cards['card_number'].tolist()
+    print("====card_numbers====")
+    print(lulu_gc_numbers)
+
+    await asyncio.sleep(10)  # Add a delay after printing data
+
+    print("=====拿到了GCNumber 继续处理===")
 
     # 使用 asyncio.run 包装异步逻辑
     async def process_request():
