@@ -1,8 +1,15 @@
 import asyncio
 import random
 import logging
-from playwright.async_api import async_playwright
 import os
+from pathlib import Path
+from playwright.async_api import async_playwright
+
+try:
+    from playwright_stealth import stealth_async
+    USE_STEALTH = True
+except ImportError:
+    USE_STEALTH = False
 
 log_dir = "../log"
 os.makedirs(log_dir, exist_ok=True)
@@ -28,7 +35,9 @@ async def init_driver(
     ]
     user_agent = random.choice(user_agents)
 
-    launch_args = {"headless": headless}
+    launch_args = {
+        "headless": headless,
+    }
     if use_proxy:
         launch_args["proxy"] = {"server": proxy_server}
 
@@ -45,6 +54,47 @@ async def init_driver(
     context = await browser.new_context(**context_args)
     page = await context.new_page()
 
+    # ========== 深度反检测配置 ==========
+    await page.add_init_script(
+        """
+        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+        Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+
+        window.chrome = { runtime: {} };
+
+        const getParameter = WebGLRenderingContext.prototype.getParameter;
+        WebGLRenderingContext.prototype.getParameter = function(parameter) {
+            if (parameter === 37445) { return 'Intel Inc.'; }
+            if (parameter === 37446) { return 'Intel Iris OpenGL Engine'; }
+            return getParameter(parameter);
+        };
+
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) =>
+            parameters.name === 'notifications'
+                ? Promise.resolve({ state: Notification.permission })
+                : originalQuery(parameters);
+
+        Object.defineProperty(screen, 'width', { get: () => 1920 });
+        Object.defineProperty(screen, 'height', { get: () => 1080 });
+        """
+    )
+
+    # 图片请求拦截
+    await page.route(
+        "**/*",
+        lambda route: (
+            route.abort()
+            if route.request.resource_type == "image"
+            else route.continue_()
+        ),
+    )
+
+    if USE_STEALTH:
+        await stealth_async(page)
+
+    logging.info("Browser initialized with stealth settings")
     return playwright, browser, context, page
 
 

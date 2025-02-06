@@ -43,7 +43,7 @@ async def check_gift_card_values():
     print("==== card_numbers ====")
     print(lulu_gc_numbers)
 
-    print("===== 拿到了 GCNumber 继续处理 ====")
+    print("===== 拿到了 GCNumber 进入 处理程序的文件!====")
 
     logging.info(f"Total Lululemon cards to check: {len(lulu_gc_numbers)}")
 

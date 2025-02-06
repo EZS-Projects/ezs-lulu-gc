@@ -14,7 +14,9 @@ async def process_card_batch(batch_id, card_numbers):
     results = []
     try:
         playwright, browser, context, page = await init_driver(headless=False)
+        print("===浏览器已经初始化 准备跳转===")
         await page.goto("https://www.lululemon.com.au/en-au/content/gift-cards/gift-cards.html")
+        print("===已经跳转!!!===")
         await close_popup(page)
         
         for idx, card_number in enumerate(card_numbers, start=1):
