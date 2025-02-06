@@ -41,7 +41,7 @@ async def human_like_actions(page):
     await page.mouse.move(x, y, steps=random.randint(5, 15))
 
 async def init_driver(
-    headless: bool = True,
+    headless: bool = False,
     use_proxy: bool = False,
     proxy_server: str = "http://127.0.0.1:1080",
     locale: str = "en-AU",

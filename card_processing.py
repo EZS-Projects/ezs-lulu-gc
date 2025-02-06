@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from playwright_helpers import init_driver, close_popup, human_like_actions, input_card_number_and_check, click_check_another_card
+from playwright_helpers import close_popup, human_like_actions, input_card_number_and_check, open_check_dialogue, click_check_another_card
+from playwright_init import init_driver
 
 def split_card_numbers(card_numbers, num_batches):
     k, m = divmod(len(card_numbers), num_batches)
@@ -16,11 +17,15 @@ async def process_card_batch(batch_id, card_numbers):
         playwright, browser, context, page = await init_driver(headless=False)
         print("===浏览器已经初始化 准备跳转===")
         await page.goto("https://www.lululemon.com.au/en-au/content/gift-cards/gift-cards.html")
-        print("===已经跳转!!!===")
+        print("===窗口页面已经跳转完毕===")
         await close_popup(page)
+        print("===已经关闭/跳过了popup的窗口====")
+        await open_check_dialogue(page)
+        print("===已经打开查询的窗口====")
         
         for idx, card_number in enumerate(card_numbers, start=1):
             logging.info(f"Batch {batch_id} => Checking card {idx}/{len(card_numbers)}: {card_number}")
+            logging.info(f"开始查询卡号: {card_number}")
             balance = await input_card_number_and_check(page, card_number)
             results.append({"card_number": card_number, "balance": balance})
 

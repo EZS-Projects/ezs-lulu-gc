@@ -3,7 +3,9 @@ import asyncio
 import pandas as pd
 import logging
 from tqdm.asyncio import tqdm
-from playwright_helpers import init_driver, close_popup, human_like_actions, input_card_number_and_check, click_check_another_card
+from playwright_helpers import close_popup, human_like_actions, input_card_number_and_check, click_check_another_card
+from playwright_init import init_driver
+
 from card_processing import process_card_batches
 
 app = Flask(__name__)
