@@ -21,23 +21,32 @@ logging.basicConfig(
 )
 
 async def close_popup(page):
-    try:
-        popup_button = await page.query_selector('xpath=//*[@id="countrySelectorModal"]/div/div/div[1]/button')
-        if popup_button:
-            await popup_button.click()
-            await page.wait_for_selector("#countrySelectorModal", state="hidden", timeout=5000)
-    except Exception as e:
-        logging.warning(f"未找到弹窗关闭按钮或点击失败: {e}")
+    popup_button = await page.query_selector('xpath=//*[@id="countrySelectorModal"]/div/div/div[1]/button')
+    if popup_button:
+        await popup_button.click()
+
+        # 使用 wait_for_function 检查弹窗是否隐藏
+        try:
+            await page.wait_for_function(
+                '''() => {
+                    const modal = document.querySelector("#countrySelectorModal");
+                    return modal === null || modal.getAttribute("aria-hidden") === "true" || modal.style.display === "none";
+                }''',
+                timeout=5000
+            )
+            logging.info("已关闭弹出的欢迎对话框")
+        except Exception as e:
+            logging.error(f"等待弹窗隐藏时发生错误: {e}")
 
 
 async def human_like_actions(page):
-    delay = random_delay(0.5, 2.0)
+    # delay = random_delay(0.5, 2.0)
     await asyncio.sleep(delay)
 
     scroll_distance = random.randint(100, 1000)
     await page.mouse.wheel(0, scroll_distance)
 
-    await asyncio.sleep(random_delay(0.5, 2.0))
+    # await asyncio.sleep(random_delay(0.5, 2.0))
 
     page_width = page.viewport_size["width"]
     page_height = page.viewport_size["height"]

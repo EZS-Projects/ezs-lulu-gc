@@ -66,7 +66,7 @@ async def init_driver(
 
     context_args = {
         "user_agent": user_agent,
-        "viewport": {"width": 1280, "height": 720},
+        "viewport": {"width": 1920, "height": 1080},
         "locale": locale,
         "timezone_id": timezone,
         "permissions": [],
@@ -113,7 +113,7 @@ async def init_driver(
     # 图片请求拦截 + 网络请求反检测
     await page.route("**/*", lambda route: (
         route.abort()
-        if route.request.resource_type in ["image", "stylesheet", "font", "script"]
+        if route.request.resource_type in ["image"]
         else route.continue_()
     ))
     
