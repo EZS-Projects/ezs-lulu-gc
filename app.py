@@ -24,11 +24,14 @@ def hello_world():
 def check_gift_card_values():
     input_data = request.json
     if not isinstance(input_data, list):
-        return jsonify({"error": "Invalid data format. Expected a list of objects."}), 400
+        return jsonify({"error": "Invalid data format. Expected a list of objects."}), 200
+
+    if len(input_data) > 1:
+        return jsonify({"error": "Query cannot exceed 10 items per request."}), 200
 
     for item in input_data:
         if not all(key in item for key in ["card_type", "card_number", "card_issue_country", "calling_time"]):
-            return jsonify({"error": "Each object must contain 'card_type', 'card_number', 'card_issue_country', and 'calling_time' fields."}), 400
+            return jsonify({"error": "Each object must contain 'card_type', 'card_number', 'card_issue_country', and 'calling_time' fields."}), 200
 
     print("==== input_data ====")
     print(input_data)
@@ -59,6 +62,7 @@ def check_gift_card_values():
         return jsonify({"error": "Internal processing error"}), 500
     
     for original, result in zip(input_data, final_results):
+        original["is_call_success"] = True if result.get("balance") is not None else False
         original["balance"] = result.get("balance")
         original["balance_timestamp"] = result.get("timestamp")
         original["time_used_by_s"] = result.get("timestamp", 0) - original["calling_time"]

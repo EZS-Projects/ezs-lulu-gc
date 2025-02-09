@@ -20,6 +20,9 @@ logging.basicConfig(
     handlers=[logging.FileHandler("../log/playwright_helper.log"), logging.StreamHandler()],
 )
 
+def random_delay(min_seconds=1.0, max_seconds=3.0):
+    return random.uniform(min_seconds, max_seconds)
+
 async def close_popup(page):
     popup_button = await page.query_selector('xpath=//*[@id="countrySelectorModal"]/div/div/div[1]/button')
     if popup_button:
@@ -68,6 +71,8 @@ async def open_check_dialogue(page):
         logging.info("已保存截图 'open_check_dialogue_error.png' 以供调试")
 
 async def input_card_number_and_check(page, card_number, max_retries=8):
+    delay = random_delay(0.5, 2.0)
+    await asyncio.sleep(delay)
     retry_count = 0
     while retry_count < max_retries:
         try:
