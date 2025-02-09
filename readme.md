@@ -12,3 +12,8 @@ Python 3.9.5
 python: aliased to python3
 /Library/Frameworks/Python.framework/Versions/3.9/bin/python3
  hao@s-MacBook-Pro  ~/GitHub/ezs-lulu-gc   main ±  
+
+
+
+
+pm2 start app.py --name ezs-lulu-gc --interpreter python3
