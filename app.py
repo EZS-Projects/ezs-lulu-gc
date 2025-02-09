@@ -14,7 +14,7 @@ logging.basicConfig(
     handlers=[logging.FileHandler("../log/api_requests.log"), logging.StreamHandler()],
 )
 
-MAX_THREADS = 1  # 增加并发线程数
+MAX_THREADS = 3  # 增加并发线程数
 
 @app.route('/hello')
 def hello_world():
@@ -26,8 +26,8 @@ def check_gift_card_values():
     if not isinstance(input_data, list):
         return jsonify({"error": "Invalid data format. Expected a list of objects."}), 200
 
-    if len(input_data) > 1:
-        return jsonify({"error": "Query cannot exceed 10 items per request."}), 200
+    if len(input_data) > 3:
+        return jsonify({"error": "Query cannot exceed 3 items per request."}), 200
 
     for item in input_data:
         if not all(key in item for key in ["card_type", "card_number", "card_issue_country", "calling_time"]):
