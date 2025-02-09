@@ -22,20 +22,20 @@ MAX_THREADS = 1  # 增加并发线程数
 def hello_world():
     return 'Hello, World!'
 
-@app.route('/check_gift_card_values', methods=['POST'])
+@app.route('/check_lululemon_gift_card_values', methods=['POST'])
 async def check_gift_card_values():
-    data = request.json
-    if not isinstance(data, list):
+    input_data = request.json
+    if not isinstance(input_data, list):
         return jsonify({"error": "Invalid data format. Expected a list of objects."}), 400
 
-    for item in data:
+    for item in input_data:
         if not all(key in item for key in ["card_type", "card_number", "card_issue_country", "calling_time"]):
             return jsonify({"error": "Each object must contain 'card_type', 'card_number', 'card_issue_country', and 'calling_time' fields."}), 400
 
-    print("==== data ====")
-    print(data)
+    print("==== input_data ====")
+    print(input_data)
 
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(input_data)
 
     lulu_cards = df[df['card_type'] == 'Lululemon-GC']
     print("==== luluCards ====")
@@ -50,6 +50,10 @@ async def check_gift_card_values():
     logging.info(f"Total Lululemon cards to check: {len(lulu_gc_numbers)}")
 
     final_results = await process_card_batches(lulu_gc_numbers, MAX_THREADS)
+    print("======原始数据=======")
+    print(input_data)
+    print("========最终结果========")
+    print(final_results)
     logging.info("All batch tasks completed")
 
     return jsonify({"results": final_results})

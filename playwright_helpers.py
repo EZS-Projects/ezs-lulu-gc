@@ -41,7 +41,7 @@ async def close_popup(page):
 
 async def human_like_actions(page):
     # delay = random_delay(0.5, 2.0)
-    await asyncio.sleep(delay)
+    # await asyncio.sleep(delay)
 
     scroll_distance = random.randint(100, 1000)
     await page.mouse.wheel(0, scroll_distance)

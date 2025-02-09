@@ -2,6 +2,7 @@ import asyncio
 import logging
 from playwright_helpers import close_popup, human_like_actions, input_card_number_and_check, open_check_dialogue, click_check_another_card
 from playwright_init import init_driver
+import time
 
 def split_card_numbers(card_numbers, num_batches):
     k, m = divmod(len(card_numbers), num_batches)
@@ -22,12 +23,16 @@ async def process_card_batch(batch_id, card_numbers):
         print("===已经关闭/跳过了popup的窗口====")
         await open_check_dialogue(page)
         print("===已经打开查询的窗口====")
-        
+
         for idx, card_number in enumerate(card_numbers, start=1):
             logging.info(f"Batch {batch_id} => Checking card {idx}/{len(card_numbers)}: {card_number}")
             logging.info(f"开始查询卡号: {card_number}")
             balance = await input_card_number_and_check(page, card_number)
-            results.append({"card_number": card_number, "balance": balance})
+            results.append({
+                "card_number": card_number,
+                "balance": balance,
+                "timestamp": int(time.time())
+            })
 
             if balance != "Error":
                 try:
@@ -42,7 +47,7 @@ async def process_card_batch(batch_id, card_numbers):
         await browser.close()
         await playwright.stop()
         logging.info(f"Batch {batch_id} browser closed")
-    
+
     return results
 
 async def process_card_batches(card_numbers, max_threads):
