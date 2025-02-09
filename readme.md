@@ -16,4 +16,11 @@ python: aliased to python3
 
 
 
-pm2 start app.py --name ezs-lulu-gc --interpreter python3
+pm2 start app.py --name ezs-lulu-gc --interpreter python3 --env DISPLAY=:99
+
+
+stg.ezs-lulu-gc.0807yeah.work
+
+
+python虚拟环境
+pyenv activate ezs-lulu-gc-env
