@@ -50,7 +50,7 @@ def check_gift_card_values():
     # 等待异步任务的结果
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    final_results = loop.run_until_complete(process_card_batches(lulu_gc_numbers, lulu_gc_numbers))
+    final_results = loop.run_until_complete(process_card_batches(lulu_gc_numbers, len(lulu_gc_numbers)))
     
     if isinstance(final_results, list):
         print("======原始数据=======")
